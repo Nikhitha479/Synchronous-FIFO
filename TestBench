@@ -1,0 +1,55 @@
+module sync_fifo_TB;
+  reg clk, reset;
+  reg w_en, r_en;
+  reg [7:0] input_data;
+  wire [7:0] output_data;
+  wire full, empty;
+  
+  synchronous_fifo uut(clk, reset, w_en, r_en, input_data, output_data, full, empty);
+  
+  always #5 clk = ~clk;
+  initial begin
+    clk = 0; reset = 0;
+    w_en = 0; r_en = 0;
+    #10 reset = 1;
+    drive(20);
+    drive(40);
+    $finish;
+  end
+  
+  task push();
+    if(!full) begin
+      w_en = 1;
+      input_data = $random;
+      #10 $display("Push In: w_en=%b, r_en=%b, input_data=%h",w_en, r_en,input_data);
+    end
+    else $display("FIFO Full!! Can not push input_data=%d", input_data);
+  endtask 
+  
+  task pop();
+    if(!empty) begin
+      r_en = 1;
+      #5 $display("Pop Out: w_en=%b, r_en=%b, output_data=%h",w_en, r_en,output_data);
+    end
+    else $display("FIFO Empty!! Can not pop output_data");
+  endtask
+  
+  task drive(int delay);
+    w_en = 0; r_en = 0;
+    fork
+      begin
+        repeat(10) begin @(posedge clk) push(); end
+        w_en = 0;
+      end
+      begin
+        #delay;
+        repeat(10) begin @(posedge clk) pop(); end
+        r_en = 0;
+      end
+    join
+  endtask
+  
+  initial begin 
+    $dumpfile("dump.vcd"); $dumpvars;
+  end
+endmodule
