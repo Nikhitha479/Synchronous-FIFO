@@ -1,0 +1,40 @@
+module synchronous_fifo #(parameter DEPTH=16, WIDTH=8) (
+  input clk, reset,
+  input w_en, r_en,
+  input [WIDTH-1:0] input_data,
+  output reg [WIDTH-1:0] output_data,
+  output full, empty
+);
+  
+  parameter PTR_WIDTH = 4;
+  reg [PTR_WIDTH:0] w_ptr, r_ptr; 
+  reg [WIDTH-1:0] fifo[DEPTH:0];
+  reg wrap_around;
+  
+  
+  always@(posedge clk) begin
+    if(!reset) begin
+      w_ptr <= 0; r_ptr <= 0;
+      output_data <= 0;
+    end
+  end
+  
+  // To write data to FIFO
+  always@(posedge clk) begin
+    if(w_en & !full)begin
+      fifo[w_ptr[PTR_WIDTH-1:0]] <= input_data;
+      w_ptr <= w_ptr + 1;
+    end
+  end
+  
+  // To read data from FIFO
+  always@(posedge clk) begin
+    if(r_en & !empty) begin
+      output_data <= fifo[r_ptr[PTR_WIDTH-1:0]];
+      r_ptr <= r_ptr + 1;
+    end
+  end
+ assign wrap_around = w_ptr[PTR_WIDTH] ^ r_ptr[PTR_WIDTH]; 
+assign full = wrap_around & (w_ptr[PTR_WIDTH-1:0] == r_ptr[PTR_WIDTH-1:0]);
+assign empty = (w_ptr == r_ptr);
+endmodule
